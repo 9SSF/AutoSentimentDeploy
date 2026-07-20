@@ -3,6 +3,7 @@ from fastapi import FastAPI
 import uvicorn
 
 from model import model_service
+from schemas import PredictRequest, PredictionResponse
 
 
 # 定义生命周期管理器
@@ -17,17 +18,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-# 新手做法：直接接收一个普通的 Python 字典（Dict），不做任何严格的格式校验
-@app.post("/predict")
-def predict(data: dict):
-    # 手动判断用户有没有传 text 过来
-    if "text" not in data or not data["text"]:
-        return {"error": "请输入有效的文本"}
+@app.post("/predict", response_model=PredictionResponse)
+def predict(payload: PredictRequest):
+    if not model_service.loaded:
+        return {"error": "模型尚未准备就绪"}
     
-    text = data["text"]
+    # payload.text 让 IDE 能自动补全，再也不会打错字
+    raw_result = model_service.predict(payload.text)
     
-    result = model_service.predict(data["text"])
-    return result
+    # 显式组装符合 PredictionResponse 要求的字典[cite: 5]
+    return {
+        "label": str(raw_result["label"]),
+        "score": float(raw_result["score"]),
+        "model": "distilbert-base-uncased-finetuned-sst-2-english"
+    }
 
 if __name__ == "__main__":
     # 启动一个运行在 8000 端口的 Web 服务器，并且检测到代码修改时自动重启(--reload)
