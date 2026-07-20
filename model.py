@@ -1,10 +1,12 @@
-# model.py
 from transformers import pipeline
+
+from settings import settings
 
 class SentimentModelService:
     def __init__(self):
-        # 初始时不加载模型，省内存[cite: 2]
+        # 初始时不加载模型，省内存
         self._classifier = None  
+        self.model_name = settings.model_name
 
     @property
     def loaded(self) -> bool:
@@ -21,7 +23,7 @@ class SentimentModelService:
         if not self.loaded:
             return {"error": "模型尚未加载就绪"}
             
-        # 实际调用推理[cite: 2]
+        # 实际调用推理
         raw_result = self._classifier(text)
         return raw_result[0]
 

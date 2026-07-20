@@ -5,6 +5,7 @@ import uvicorn
 from model import model_service
 from schemas import PredictRequest, PredictionResponse
 
+from settings import settings
 
 # 定义生命周期管理器
 @asynccontextmanager
@@ -23,6 +24,13 @@ def predict(payload: PredictRequest):
     if not model_service.loaded:
         return {"error": "模型尚未准备就绪"}
     
+    # 对文本长度进行限制
+    if len(payload.text) > settings.max_text_length:
+        raise HTTPException(
+            status_code=422, 
+            detail=f"文本长度不能超过 {settings.max_text_length} 个字符"
+        )
+
     # payload.text 让 IDE 能自动补全，再也不会打错字
     raw_result = model_service.predict(payload.text)
     
