@@ -1,9 +1,20 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
 
-from model import get_prediction
+from model import model_service
 
-app = FastAPI()
+
+# 定义生命周期管理器
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 当 Uvicorn 真正启动 server 进程时，这里才会被触发【仅一次】
+    model_service.load()
+    yield
+    print(">>> 【Lifespan】服务器正在关闭...")
+
+# 将寿命周期管理器注册进 FastAPI[cite: 1]
+app = FastAPI(lifespan=lifespan)
 
 
 # 新手做法：直接接收一个普通的 Python 字典（Dict），不做任何严格的格式校验
@@ -15,7 +26,7 @@ def predict(data: dict):
     
     text = data["text"]
     
-    result = get_prediction(text)
+    result = model_service.predict(data["text"])
     return result
 
 if __name__ == "__main__":
