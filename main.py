@@ -1,12 +1,10 @@
 from fastapi import FastAPI
-from transformers import pipeline
 import uvicorn
+
+from model import get_prediction
 
 app = FastAPI()
 
-print("正在加载模型...")
-classifier = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
-print("模型加载成功！")
 
 # 新手做法：直接接收一个普通的 Python 字典（Dict），不做任何严格的格式校验
 @app.post("/predict")
@@ -17,9 +15,8 @@ def predict(data: dict):
     
     text = data["text"]
     
-    # 直接调用全局的模型变量进行预测
-    raw_result = classifier(text)
-    return raw_result[0]
+    result = get_prediction(text)
+    return result
 
 if __name__ == "__main__":
     # 启动一个运行在 8000 端口的 Web 服务器，并且检测到代码修改时自动重启(--reload)
