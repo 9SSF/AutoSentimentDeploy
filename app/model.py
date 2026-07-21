@@ -1,6 +1,6 @@
 from transformers import pipeline
 
-from settings import settings
+from app.settings import settings
 
 class SentimentModelService:
     def __init__(self):
@@ -22,7 +22,6 @@ class SentimentModelService:
     def predict(self, text: str):
         if not self.loaded:
             return {"error": "模型尚未加载就绪"}
-            
         # 实际调用推理
         raw_result = self._classifier(text)
         return raw_result[0]

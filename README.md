@@ -6,7 +6,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 
-python3 main.py
+python3 -m app.main
+python3 -m pytest
+python3 -m pytest -s # 打印输出
 
 deactivate # exit
 ```
