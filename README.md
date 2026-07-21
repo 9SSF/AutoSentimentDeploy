@@ -12,3 +12,11 @@ python3 -m pytest -s # 打印输出
 
 deactivate # exit
 ```
+
+docker:
+```bash
+docker build -t auto-sentiment:v1 . #构建镜像
+docker run -d -p 8000:8000 --name auto-sentiment auto-sentiment:v1 # 启动容器
+
+docker logs -f auto-sentiment # 验证日志
+```

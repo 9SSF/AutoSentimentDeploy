@@ -3,11 +3,11 @@
 - [x] 通过 FastAPI 的 pandantic 优化数据输入和输出
 - [x] 引入环境变量和设置文件
 - [x] 引入单元测试：测试 HTTP 接口；测试数据校验逻辑；测试代码路径的分支
-- [ ] Docker
-- [ ] CI/CD
+- [x] Docker
+- [ ] 健康检查端口
 - [ ] 结构化 JSON 日志
 - [ ] 中间件
 - [ ] 支持批量输入
-- [ ] 健康检查端口
 - [ ] Prometheus 的 Metrics 埋点
 - [ ] Grafana 监控面板
+- [ ] CI/CD
