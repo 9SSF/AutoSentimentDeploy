@@ -10,6 +10,7 @@ class Settings:
     # 定义配置字段，并设置默认值（如果环境变量里没有，就用默认值）
     model_name: str = os.getenv("MODEL_NAME", "distilbert-base-uncased-finetuned-sst-2-english")
     max_text_length: int = int(os.getenv("MAX_TEXT_LENGTH", "512"))
+    max_batch_size: int = int(os.getenv("MAX_BATCH_SIZE", "16"))
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
 # 实例化配置对象，供其他文件导入
