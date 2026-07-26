@@ -1,5 +1,8 @@
+import time
+import uuid
+import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 import uvicorn
 
 from app.model import model_service
@@ -11,14 +14,21 @@ from app.schemas import (
     HealthResponse
 )
 from app.settings import settings
+from app.logging_config import setup_logging, request_id_ctx
+
+# 1. 初始化结构化日志
+setup_logging(settings.log_level)
+logger = logging.getLogger("app.main")
 
 # 定义生命周期管理器
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info(">>> 【Lifespan】正在加载模型...")
     # 当 Uvicorn 真正启动 server 进程时，这里才会被触发【仅一次】
     model_service.load()
+    logger.info(">>> 【Lifespan】模型加载完成，服务就绪！")
     yield
-    print(">>> 【Lifespan】服务器正在关闭...")
+    logger.info(">>> 【Lifespan】服务器正在关闭...")
 
 # 将寿命周期管理器注册进 FastAPI
 app = FastAPI(lifespan=lifespan)
@@ -32,10 +42,33 @@ def health():
         model_name=settings.model_name,
     )
 
+# 2. 全局 HTTP 中间件：拦截请求、记录耗时、追踪 request_id
+@app.middleware("http")
+async def log_requests_middleware(request: Request, call_next):
+    start_time = time.time()
+    
+    # 优先从 Request Header 中获取调用方传来的 x-request-id，没有则自动生成 UUID
+    req_id = request.headers.get("x-request-id", str(uuid.uuid4()))
+    token = request_id_ctx.set(req_id)
+    
+    try:
+        response: Response = await call_next(request)
+        process_time = (time.time() - start_time) * 1000  # 算出的毫秒数
+        
+        # 记录结构化请求日志
+        logger.info(
+            f"HTTP {request.method} {request.url.path} - Status: {response.status_code} - Latency: {process_time:.2f}ms"
+        )
+        # 将 request_id 返回给前端/客户端，方便排查
+        response.headers["X-Request-ID"] = req_id
+        return response
+    finally:
+        request_id_ctx.reset(token)
+
 @app.post("/predict", response_model=PredictionResponse)
 def predict(payload: PredictRequest):
     if not model_service.loaded:
-        return {"error": "模型尚未准备就绪"}
+        raise HTTPException(status_code=503, detail="模型尚未准备就绪")
     # 对文本长度进行限制
     if len(payload.text) > settings.max_text_length:
         raise HTTPException(
@@ -44,6 +77,7 @@ def predict(payload: PredictRequest):
         )
     # payload.text 让 IDE 能自动补全
     raw_result = model_service.predict(payload.text)
+    logger.info(f"predict_completed label={raw_result['label']} score={raw_result['score']:.4f}")
     # 显式组装符合 PredictionResponse 要求的字典
     return {
         "label": str(raw_result["label"]),
