@@ -72,3 +72,29 @@ def test_predict_batch_too_many_items(client):
     payload = {"texts": ["test"] * 100}
     response = client.post("/predict/batch", json=payload)
     assert response.status_code == 422
+
+
+def test_metrics_endpoint(client):
+    """测试 /metrics 监控端点是否能正常返回 Prometheus 数据"""
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    # 验证返回内容里是否包含了我们定义的指标名称
+    assert "http_requests_total" in response.text
+    assert "predictions_total" in response.text
+
+def test_metrics_increment_on_predict(client):
+    """测试调用预测接口后，Prometheus 指标是否包含了 POSITIVE 标签统计"""
+    # 1. 先请求一次预测
+    response = client.post("/predict", json={"text": "I love FastAPI!"})
+    assert response.status_code == 200
+    assert response.json()["label"] == "POSITIVE"
+
+    # 2. 再次请求 /metrics
+    metrics_response = client.get("/metrics")
+    assert metrics_response.status_code == 200
+    
+    # 3. 灵活验证：断言指标文本里同时包含指标名、POSITIVE 标签和 fake 模型名
+    metrics_text = metrics_response.text
+    assert "predictions_total" in metrics_text
+    assert 'label="POSITIVE"' in metrics_text
+    assert 'model="test-fake-model"' in metrics_text

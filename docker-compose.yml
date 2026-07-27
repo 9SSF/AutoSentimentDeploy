@@ -3,11 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: sentiment-api:local
+    image: auto-sentiment-api:local
     environment:
       MODEL_NAME: distilbert-base-uncased-finetuned-sst-2-english
       LOG_LEVEL: INFO
       MAX_TEXT_LENGTH: "512"
+      MAX_BATCH_SIZE: "32"
     ports:
       - "8000:8000"
     volumes:
@@ -20,5 +21,34 @@ services:
       retries: 3
       start_period: 60s
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    depends_on:
+      api:
+        condition: service_started
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+
 volumes:
   huggingface-cache:
+  prometheus-data:
+  grafana-data:
