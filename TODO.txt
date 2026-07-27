@@ -7,7 +7,7 @@
 - [x] 健康检查端口
 - [x] 结构化 JSON 日志
 - [x] 中间件
-- [ ] 支持批量输入
-- [ ] Prometheus 的 Metrics 埋点
+- [x] 支持批量输入
+- [x] Prometheus 的 Metrics 埋点
 - [ ] Grafana 监控面板
 - [ ] CI/CD
