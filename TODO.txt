@@ -10,4 +10,4 @@
 - [x] 支持批量输入
 - [x] Prometheus 的 Metrics 埋点
 - [x] Grafana 监控面板
-- [ ] CI/CD
+- [x] CI/CD
